@@ -50,6 +50,62 @@ const managerSingUp=async(req,res)=>{
     }
 }
 
+const managerLogin=async(req,res)=>{
+    try {
+        const {email,password}=req.body;
+        if(!email || !password){
+            return res.status(402).json({
+                success:false,
+                message:"All fields are requierd!"
+            })
+        }
+        const manager=await Manager.findOne({email:email})
+        if(!manager){
+            return res.status(404).json({
+                success:false,
+                message:"manager not exists!"
+            })
+        }
+
+        if(await bcrypt.compare(password,manager.password))
+        {
+            const payload={
+                id:manager.id,
+                email:manager.email,
+                role:manager.role
+            }
+
+            const token=jwt.sign(payload,process.env.JWT_SECRET,{expiresIn:"3h"})
+            manager.token=token
+            manager.password=undefined
+
+            const option={
+                expiresIn: new Date(Date.now()+ 4*24*60*60*100),
+                httpOnly:true
+            }
+
+            res.cookie("token",token,option).json({
+                success:true,
+                message:"Login Successfull",
+                token,
+                manager
+            })
+        }
+        else{
+            return res.status(400).json({
+                success:false,
+                message:"Invaild Password"
+            })
+        }
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success:false,
+            message:"Error occur while login!"
+        })
+    }
+}
+
 const signUp=async(req,res)=>{
     try {
         const {fullName,email,password,role,managerEmail}=req.body;
@@ -219,8 +275,9 @@ const submitTimeSheet=async(req,res)=>{
             })
         }
 
-        const timeSheet=await TimeSheet.findOne({user:userId})
-        const manager=await Manager.findByIdAndUpdate({_id:managerId},{$push:{timeShet:timeSheet}},{new:true})
+        const timeSheet=await TimeSheet.findOne({user:userId}).populate("task").exec()
+        console.log(timeSheet);
+        const manager=await Manager.findByIdAndUpdate({_id:managerId},{timeShet:timeSheet})
         if(!manager){
             return res.status(404).json({
                 success:false,
@@ -243,4 +300,32 @@ const submitTimeSheet=async(req,res)=>{
     }
 }
 
-export {managerSingUp,signUp,login,addTask,submitTimeSheet}
+
+const rateTheSheet=async(req,res)=>{
+    try {
+        const {managerId}=req.body
+        const manager=await Manager.findById({_id:managerId}).populate({
+            path:"timeShet",
+            populate:[
+                "task" ]
+        }).exec()
+        console.log(manager);
+        const userId=manager.timeShet.user
+        const getUser=await User.findById(userId)
+        getUser.edit=false
+        getUser.save()
+        return res.status(200).json({
+            success:true,
+            message:"Rate succesfull"
+        })
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success:false,
+            message:"Error occur while reating!"
+        })
+    
+    }
+}
+
+export {managerSingUp,signUp,login,addTask,submitTimeSheet,rateTheSheet,managerLogin}

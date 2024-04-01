@@ -21,12 +21,12 @@ const managerSchema=new mongoose.Schema({
         enum:["manager","employee"],
         required:true
     },
-    timeShet:[
+    timeShet:
         {
             type:mongoose.Schema.Types.ObjectId,
             ref:"TimeSheet"
         }
-    ],
+    ,
     employee:[
         {
             type:mongoose.Schema.Types.ObjectId,
