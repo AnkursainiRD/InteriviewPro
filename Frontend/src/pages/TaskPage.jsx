@@ -1,12 +1,16 @@
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { setTask } from '../service/operation/userApi'
 
 function TaskPage() {
     const {register,handleSubmit,formState:{errors}}=useForm()
+    function sendTask(){
+        setTask()
+    }
   return (
     <div className='w-full h-full  flex items-center justify-center'>
         
-         <form onSubmit={handleSubmit()} className='flex flex-col text-left'>
+         <form onSubmit={handleSubmit(sendTask)} className='flex flex-col text-left'>
                 <label htmlFor="description">Task Name</label>
                 <input type="text" id='description' placeholder='description' {...register("description",{required:true})} className='bg-gray-300'/>
                 {errors.description && <p>Name is requierd</p>}
